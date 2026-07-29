@@ -17,49 +17,30 @@ jobs:
       - name: Install pandoc
         run: sudo apt-get install -y pandoc
 
+      - name: Copy brand assets
+        run: |
+          mkdir -p site/assets
+          cp assets/*.png site/assets/
+          cp assets/style.css site/assets/
+
       - name: Convert Markdown to HTML
         run: |
           mkdir -p site
           for file in *.md; do
             filename=$(basename "$file" .md)
             if echo "$filename" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-              pandoc "$file" -f markdown -t html -s -o "site/$filename.html" --metadata title="Poja $filename"
+              pandoc "$file" -f markdown -t html -s --template=assets/template.html \
+                --metadata title="Poja $filename" --metadata version="$filename" \
+                -o "site/$filename.html"
             else
-              pandoc "$file" -f markdown -t html -s -o "site/$filename.html"
+              pandoc "$file" -f markdown -t html -s --template=assets/template.html \
+                --metadata title="Poja Changelog - $filename" \
+                -o "site/$filename.html"
             fi
           done
 
       - name: Generate index page
-        run: |
-          VERSIONS=$(ls *.md 2>/dev/null \
-            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.md$' \
-            | sed 's/\.md$//' \
-            | sort -rV)
-
-          cat > site/index.html << 'HTMLEOF'
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8" />
-            <title>Poja Changelog</title>
-          </head>
-          <body>
-            <h1>Poja Changelog</h1>
-          HTMLEOF
-
-          for VERSION in $VERSIONS; do
-            CONTENT=$(pandoc "$VERSION.md" -f markdown -t html --shift-heading-level-by=1 2>/dev/null || echo "<p>No content.</p>")
-            cat >> site/index.html << BLOCKEOF
-            <h2>v$VERSION</h2>
-            $CONTENT
-            <hr>
-          BLOCKEOF
-          done
-
-          cat >> site/index.html << 'HTMLEOF'
-          </body>
-          </html>
-          HTMLEOF
+        run: bash assets/generate-index.sh
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
