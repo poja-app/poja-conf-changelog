@@ -2,7 +2,6 @@ name: cd.yml
 on:
   push:
     branches: [main]
-
 jobs:
   deploy:
     permissions:
@@ -29,6 +28,38 @@ jobs:
               pandoc "$file" -f markdown -t html -s -o "site/$filename.html"
             fi
           done
+
+      - name: Generate index page
+        run: |
+          VERSIONS=$(ls *.md 2>/dev/null \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.md$' \
+            | sed 's/\.md$//' \
+            | sort -rV)
+
+          cat > site/index.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <title>Poja Changelog</title>
+          </head>
+          <body>
+            <h1>Poja Changelog</h1>
+          HTMLEOF
+
+          for VERSION in $VERSIONS; do
+            CONTENT=$(pandoc "$VERSION.md" -f markdown -t html --shift-heading-level-by=1 2>/dev/null || echo "<p>No content.</p>")
+            cat >> site/index.html << BLOCKEOF
+            <h2>v$VERSION</h2>
+            $CONTENT
+            <hr>
+          BLOCKEOF
+          done
+
+          cat >> site/index.html << 'HTMLEOF'
+          </body>
+          </html>
+          HTMLEOF
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
