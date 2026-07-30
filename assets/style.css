@@ -175,6 +175,15 @@ main.container {
   margin-left: 10px;
 }
 
+.version-date {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.version-card-header .version-date {
+  margin-left: auto;
+}
+
 .version-list {
   display: flex;
   flex-direction: column;
@@ -234,6 +243,11 @@ main.container {
 .version-page .version-eyebrow .version-badge {
   font-size: 1.5rem;
   padding: 8px 22px;
+}
+
+.version-page .version-eyebrow .version-date {
+  display: block;
+  margin-top: 10px;
 }
 
 .version-page h2 {

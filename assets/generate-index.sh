@@ -10,6 +10,10 @@ VERSIONS=$(ls *.md 2>/dev/null \
 
 LATEST=$(echo "$VERSIONS" | head -n1)
 
+DATE_TEMPLATE=$(mktemp)
+printf '%s' '$date$' > "$DATE_TEMPLATE"
+trap 'rm -f "$DATE_TEMPLATE"' EXIT
+
 cat > "$OUT" << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="en">
@@ -50,10 +54,16 @@ HTMLEOF
 
 for VERSION in $VERSIONS; do
   CONTENT=$(pandoc "$VERSION.md" -f markdown -t html 2>/dev/null || echo "<p>No content.</p>")
+  DATE=$(pandoc "$VERSION.md" -f markdown -t plain --template="$DATE_TEMPLATE" 2>/dev/null || true)
 
   LATEST_BADGE=""
   if [ "$VERSION" = "$LATEST" ]; then
     LATEST_BADGE='<span class="latest-badge">Latest</span>'
+  fi
+
+  DATE_SPAN=""
+  if [ -n "$DATE" ]; then
+    DATE_SPAN="<span class=\"version-date\">$DATE</span>"
   fi
 
   cat >> "$OUT" << BLOCKEOF
@@ -61,6 +71,7 @@ for VERSION in $VERSIONS; do
       <div class="version-card-header">
         <span class="version-badge">v$VERSION</span>
         $LATEST_BADGE
+        $DATE_SPAN
       </div>
       $CONTENT
       <div class="version-card-footer">
